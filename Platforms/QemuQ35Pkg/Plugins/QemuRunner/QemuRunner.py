@@ -112,7 +112,7 @@ class QemuRunner(uefi_helper_plugin.IUefiHelperPlugin):
                 args += f" -drive file=\"{path_to_os}\",format={storage_format},if=none,id=os_nvme"
                 args += " -device nvme,serial=nvme-1,drive=os_nvme"
         else:
-            args += " -m 2048"
+            args += " -m 4096"
 
         cpu_model = env.GetValue("CPU_MODEL")
         if cpu_model is None:
