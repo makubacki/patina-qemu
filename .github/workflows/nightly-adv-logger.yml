@@ -1,0 +1,189 @@
+# A workflow to validate advanced logger workflows work as expected.
+#
+# Please refer to [Platforms/Docs/Common/regression-testing.md](https://github.com/OpenDevicePartnership/patina-qemu/tree/main/Platforms/Docs/Common/regression-testing.md)
+# for more information on regression testing performed in this repository, including Advanced Logger tests.
+#
+##
+# Copyright (c) Microsoft Corporation.
+#
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+name: Nightly Adv Log Test
+
+on:
+  schedule:
+    - cron: 0 7 * * *
+  workflow_dispatch:
+
+jobs:
+  vars:
+    name: Get Repository Constants
+    uses: ./.github/workflows/constants.yml
+
+  adv-logger-shell-test:
+    name: UEFI shell Adv Log
+    
+    needs: vars
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: ${{ needs.vars.outputs.container-image }}
+      options: --security-opt seccomp=unconfined
+    
+    timeout-minutes: 30
+
+    env:
+      TOOL_CHAIN: ${{ needs.vars.outputs.linux-toolchain }}
+      STARTUP_NSH_PATH: './STARTUP.NSH'
+      LOG_FILE: 'ADV_LOGS.TXT'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Q35 DEBUG
+          - config: Platforms/QemuQ35Pkg/PlatformBuild.py
+            target: DEBUG
+            platform: Q35
+          # Q35 RELEASE
+          - config: Platforms/QemuQ35Pkg/PlatformBuild.py
+            target: RELEASE
+            platform: Q35
+          # SBSA DEBUG
+          - config: Platforms/QemuSbsaPkg/PlatformBuild.py
+            target: DEBUG
+            platform: SBSA
+          # SBSA RELEASE
+          - config: Platforms/QemuSbsaPkg/PlatformBuild.py
+            target: RELEASE
+            platform: SBSA
+    steps:
+      # Checkout the repository to the runner or container
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Configure git for use in the container. Specifically needed for the FFA builds
+      - name: Container Configuration
+        run: |
+          git config --global --add safe.directory '*'
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+      
+      # Install the pip dependencies needed to run stuart for the platform(s)
+      - name: Install dependencies
+        run: pip install -r pip-requirements.txt
+      
+      - name: Create startup NSH
+        run: |
+          touch ${{ env.STARTUP_NSH_PATH }}
+          echo "if not exist UefiLogs then" >> ${{ env.STARTUP_NSH_PATH }}
+          echo "  mkdir UefiLogs" >> ${{ env.STARTUP_NSH_PATH }} 
+          echo "  reset" >> ${{ env.STARTUP_NSH_PATH }}
+          echo "endif" >> ${{ env.STARTUP_NSH_PATH }}
+          echo "AdvancedLogDumper.efi -o ${{ env.LOG_FILE }}" >> ${{ env.STARTUP_NSH_PATH }}
+      
+      # Run the build-platform action, which calls stuart_setup, stuart_update, and stuart_build
+      - name: Prepare and Build
+        id: build-platform  
+        uses: ./.github/actions/build-platform
+        with:
+          command: 'build'
+          platform-config: ${{ matrix.config }}
+          platform-name: ${{ matrix.platform }}
+          target: ${{ matrix.target }}
+          tool-chain: ${{ env.TOOL_CHAIN }}
+          stuart-args: 'QEMU_HEADLESS=TRUE BLD_*_QEMU_CORE_NUM=${{ needs.vars.outputs.qemu-core-count }} STARTUP_NSH="${{ env.STARTUP_NSH_PATH }}" SHUTDOWN_AFTER_RUN=TRUE FILE_REGEX=*AdvancedLogDumper.efi'
+      
+      - name: Run
+        uses: ./.github/actions/build-platform
+        with:
+          command: 'flash'
+          platform-config: ${{ matrix.config }}
+          platform-name: ${{ matrix.platform }}
+          target: ${{ matrix.target }}
+          tool-chain: ${{ env.TOOL_CHAIN }}
+          stuart-args: 'QEMU_HEADLESS=TRUE BLD_*_QEMU_CORE_NUM=${{ needs.vars.outputs.qemu-core-count }} STARTUP_NSH="${{ env.STARTUP_NSH_PATH }}" SHUTDOWN_AFTER_RUN=TRUE FILE_REGEX=*AdvancedLogDumper.efi'
+
+      # Extracts and validates the log dump from AdvancedLogDumper dumps logs from PEI and DXE
+      # Ensures the same logs are automatically placed in /UefiLogs/ folder by default
+      - name: Extract and validate log dump
+        run: |
+          IMG_FILE="$(find Build -type f -name '*.img' -print -quit || true)"
+
+          if [ -z "${IMG_FILE}" ]; then
+            echo "::error::No .img file found under Build/"
+            exit 1
+          fi
+
+          mcopy -n -i "$IMG_FILE" ::/${{ env.LOG_FILE }} .
+          mcopy -n -i "$IMG_FILE" ::/UefiLogs/UEFI_Index.txt
+          mcopy -n -i "$IMG_FILE" ::/UefiLogs/UEFI_Log1.txt
+
+          if [ ! -f ${{ env.LOG_FILE }} ]; then
+            echo "::error file=${{ env.LOG_FILE }}::file does not exist. Advanced Logger test failed." >&2
+            exit 1
+          fi
+
+          cp ${{ env.LOG_FILE }} ${{ steps.build-platform.outputs.log-path }}
+
+          found_pei=0
+          found_dxe=0
+          found_mcore=0
+          found_rtdxe=0
+          invalid=0
+          failed=0
+          line_no=0
+
+          while IFS= read -r line; do
+            line_no=$((line_no + 1))
+
+            case "$line" in
+              *"[PEI  ]"*)
+                found_pei=1
+                ;;
+              *"[DXE  ]"*)
+                found_dxe=1
+                ;;
+              *"[MCORE]"*)
+                found_mcore=1
+                ;;
+              *"[RTDXE]"*)
+                found_rtdxe=1
+                ;;
+              *)
+                echo "::error file=${LOG_FILE},line=${line_no}::Invalid log line: $line"
+                failed=1
+                ;;
+            esac
+          done < "$LOG_FILE"
+
+          # Empty file check
+          if [ "$line_no" -eq 0 ]; then
+            echo "::error file=${LOG_FILE}::Log file is empty"
+            exit 1
+          fi
+
+          [ "$found_dxe"   -eq 1 ] || { echo "::error file=${LOG_FILE}::Missing log tagged [DXE  ]"; failed=1; }
+
+          if [ "${{ matrix.platform }}" = "Q35" ]; then
+            [ "$found_pei"   -eq 1 ] || { echo "::error file=${LOG_FILE}::Missing log tagged [PEI  ]"; failed=1; }
+            [ "$found_mcore" -eq 1 ] || { echo "::error file=${LOG_FILE}::Missing log tagged [MCORE]"; failed=1; }
+          fi
+
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+
+          if [ ! -s UEFI_Log1.txt ]; then
+            echo "::error file=Uefi_Log1.txt::File is empty when it should not be."
+            cp UEFI_Log1.txt ${{ steps.build-platform.outputs.log-path }}
+            exit 1
+          fi
+
+      - name: Publish Logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-logs-${{ matrix.platform }}-${{ matrix.target }}-${{ env.TOOL_CHAIN }}
+          path: ${{ steps.build-platform.outputs.log-path }}
