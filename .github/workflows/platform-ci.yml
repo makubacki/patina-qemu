@@ -9,6 +9,9 @@ name: "Platform CI"
 
 on:
   workflow_dispatch:
+  release:
+    types:
+      - published
   push:
     branches:
       - main
@@ -136,8 +139,28 @@ jobs:
           name: build-logs-${{ matrix.platform }}-${{ matrix.target }}-${{ matrix.tool-chain }}
           path: ${{ steps.build-platform.outputs.log-path }}
 
+      - name: Publish Q35 release binaries
+        if: ${{ github.event_name == 'release' && matrix.platform == 'Q35' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-bin-${{ matrix.platform }}-${{ matrix.target }}-${{ matrix.tool-chain }}
+          path: |
+            Build/**/FV/QEMUQ35_CODE.fd
+            Build/**/FV/QEMUQ35_VARS.fd
+          if-no-files-found: error
+
+      - name: Publish SBSA release binaries
+        if: ${{ github.event_name == 'release' && matrix.platform == 'SBSA' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-bin-${{ matrix.platform }}-${{ matrix.target }}-${{ matrix.tool-chain }}
+          path: |
+            Build/**/FV/QEMU_EFI.fd
+            Build/**/FV/SECURE_FLASH0.fd
+          if-no-files-found: error
+
   # Runs the readiness tool.
-  readiness: 
+  readiness:
     name: Readiness ${{ matrix.platform }} ${{ matrix.target }} ${{ matrix.tool-chain }}
     needs: vars
     runs-on: ${{ matrix.os }}
@@ -184,7 +207,7 @@ jobs:
           python-version: ${{ needs.vars.outputs.python-version }}
           cache: 'pip'
           cache-dependency-path: 'pip-requirements.txt'
-      
+
       # Install the pip dependencies needed to run stuart for the platform(s)
       - name: Install dependencies
         run: pip install -r pip-requirements.txt
@@ -228,7 +251,7 @@ jobs:
 
           # Skip log lines and extract JSON content (from first { to last })
           sed -n '/^INFO - INFO - {$/,/^INFO - }$/{s/^INFO - //; s/^INFO - //; p}' "$logfile" > "$capture_file"
-          
+
           # Verify JSON was extracted
           if [ -s "$capture_file" ] && grep -q '{' "$capture_file" && grep -q '}' "$capture_file"; then
             echo "Filtered JSON written to $capture_file"
@@ -242,7 +265,7 @@ jobs:
         run: |
           capture_file="capture.json"
           validator_log="validator_output.txt"
-          
+
           if [ "${{ matrix.platform }}" = "SBSA" ]; then
             chmod +x "${DXE_READINESS_TOOL_PATH}/validator/linux/dxe_readiness_validator_x86_64"
             "${DXE_READINESS_TOOL_PATH}/validator/linux/dxe_readiness_validator_x86_64" -f "$capture_file" 2>&1 | tee "$validator_log"
