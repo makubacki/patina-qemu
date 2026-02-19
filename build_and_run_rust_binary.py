@@ -26,6 +26,20 @@ from Platforms.Common.Qemu.QemuCommandBuilder import QemuArchitecture
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
+def _create_shutdown_drive(dest_dir: Path) -> Path:
+    """Creates a directory containing a startup.nsh script that shuts down the system.
+
+    Args:
+        dest_dir (Path): Directory to create startup.nsh in.
+
+    Returns:
+        Path: Path to the directory containing startup.nsh.
+    """
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    (dest_dir / "startup.nsh").write_text("reset -s\n")
+    return dest_dir
+
+
 def _parse_arguments() -> argparse.Namespace:
     """
     Parses command-line arguments for building and running Rust DXE Core.
@@ -152,7 +166,7 @@ def _parse_arguments() -> argparse.Namespace:
         action="store_true",
         default=False,
         help="Skip building the Rust DXE Core and use the pre-built binary at the "
-        "expected output path in the patina-dxe-core-qemu repository.",
+        "expected output path in the repository that builds the binary.",
     )
     parser.add_argument(
         "--monitor-port",
@@ -166,6 +180,13 @@ def _parse_arguments() -> argparse.Namespace:
         action="store_true",
         default=False,
         help="Run QEMU without a display (headless mode).",
+    )
+    parser.add_argument(
+        "--shutdown-after-run",
+        action="store_true",
+        default=False,
+        help="Mount a virtual drive containing a startup.nsh that issues `reset -s`, causing "
+        "UEFI Shell to shut down automatically on boot. Useful for automated/CI runs.",
     )
 
     args = parser.parse_args()
@@ -285,6 +306,12 @@ def _configure_settings(args: argparse.Namespace) -> Dict[str, Path]:
             .with_monitor_port(args.monitor_port)
         )
 
+        if args.shutdown_after_run:
+            shutdown_drive = _create_shutdown_drive(
+                SCRIPT_DIR / "Build" / "shutdown_drive"
+            )
+            qemu_cmd_builder = qemu_cmd_builder.with_virtual_drive(str(shutdown_drive))
+
         patch_cmd = [
             "python",
             "patch.py",
@@ -379,6 +406,12 @@ def _configure_settings(args: argparse.Namespace) -> Dict[str, Path]:
             .with_serial_port(args.serial_port)
             .with_monitor_port(args.monitor_port)
         )
+
+        if args.shutdown_after_run:
+            shutdown_drive = _create_shutdown_drive(
+                SCRIPT_DIR / "Build" / "shutdown_drive"
+            )
+            qemu_cmd_builder = qemu_cmd_builder.with_virtual_drive(str(shutdown_drive))
 
         patch_cmd = [
             "python",
