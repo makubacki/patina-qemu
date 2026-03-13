@@ -15,6 +15,7 @@ from io import StringIO
 from pathlib import Path
 import json
 import shutil
+import git
 
 from edk2toolext.environment import shell_environment
 from edk2toolext.environment.uefi_build import UefiBuilder
@@ -115,7 +116,7 @@ class SettingsManager(UpdateSettingsManager, SetupSettingsManager, PrEvalSetting
             RequiredSubmodule("Common/MU", False, ".pytool/CISettings.py"),
             RequiredSubmodule("Common/PATINA_EDK2", False, ".pytool/CISettings.py"),
             RequiredSubmodule("Silicon/Arm/TFA", True),
-            RequiredSubmodule("Silicon/Arm/HAF", True),
+            RequiredSubmodule("Silicon/Arm/HAF", False),
             RequiredSubmodule("Features/FFA", True),
         ]
 
@@ -315,7 +316,7 @@ class PlatformBuilder(UefiBuilder, BuildSettingsManager):
         self.env.SetValue("MU_SCHEMA_DIR", self.edk2path.GetAbsolutePathOnThisSystemFromEdk2RelativePath("QemuSbsaPkg", "CfgData"), "Platform Defined")
         self.env.SetValue("MU_SCHEMA_FILE_NAME", "QemuSbsaPkgCfgData.xml", "Platform Hardcoded")
         self.env.SetValue("HAF_TFA_BUILD", "FALSE", "Platform Hardcoded")
-        
+
         if self.env.GetValue("OS_BOOT_DEVICE", "").upper() == "USB":
             self.env.SetValue("BLD_*_USB_BOOT_PRIORITY", "TRUE", "Set due to OS_BOOT_DEVICE=USB")
 
@@ -850,12 +851,26 @@ class PlatformBuilder(UefiBuilder, BuildSettingsManager):
         logging.debug(f"Copied all Hafnium and TFA binaries to {output_dir}")
         return 0
 
+    def PlatformPreBuild(self):
+        if self.env.GetValue("HAF_TFA_BUILD") == "TRUE":
+            haf_repo = git.Repo(Path(self.GetWorkspaceRoot()) / "Silicon/Arm/HAF")
+            try:
+                haf_repo.git.submodule("update", "--init", "--recursive")
+                logging.info("HAF submodule hydrated successfully")
+            except git.GitCommandError as e:
+                logging.error(f"Failed to hydrate HAF submodule: {e}")
+                return -1
+        else:
+            logging.info("HAF_TFA_BUILD=FALSE, skipping TF-A build and using prebuilt binaries. Make sure to build with HAF_TFA_BUILD=TRUE at least once to generate the necessary fip_blob_manifest.json for patching.")
+
+        return 0
+
     def PlatformPostBuild(self):
         # Set Default BIN and DTS paths if not on command prompt
         self.env.SetValue( "MSSP_RUST_BIN_FILE",
                             os.path.join(self.env.GetValue("SECURE_PARTITION_BINARIES"), "msft-sp.bin"),
                             "Path for mssp-rust sp binary file")
-        self.env.SetValue( "MSSP_RUST_DTS_FILE", 
+        self.env.SetValue( "MSSP_RUST_DTS_FILE",
                            str(Path(__file__).parent / "fdts/qemu_sbsa_mssp_rust_config.dts"),
                            "Path for mssp-rust sp DTS file")
 
