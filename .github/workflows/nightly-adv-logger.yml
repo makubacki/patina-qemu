@@ -22,7 +22,7 @@ jobs:
 
   adv-logger-shell-test:
     name: UEFI shell Adv Log
-    
+
     needs: vars
 
     runs-on: ubuntu-latest
@@ -30,7 +30,7 @@ jobs:
     container:
       image: ${{ needs.vars.outputs.container-image }}
       options: --security-opt seccomp=unconfined
-    
+
     timeout-minutes: 30
 
     env:
@@ -66,7 +66,7 @@ jobs:
       # Configure git for use in the container. Specifically needed for the FFA builds
       - name: Configure Git
         uses: ./.github/actions/configure-git
-      
+
       # Install the pip dependencies needed to run stuart for the platform(s)
       - name: Install dependencies
         run: pip install -r pip-requirements.txt
@@ -82,7 +82,7 @@ jobs:
           echo "  reset" >> ${{ env.STARTUP_NSH_PATH }}
           echo "endif" >> ${{ env.STARTUP_NSH_PATH }}
           echo "AdvancedLogDumper.efi -o ${{ env.LOG_FILE }}" >> ${{ env.STARTUP_NSH_PATH }}
-      
+
       # Run the build-platform action, which calls stuart_setup, stuart_update, and stuart_build
       - name: Prepare and Build
         id: build-platform
@@ -94,7 +94,7 @@ jobs:
           target: ${{ matrix.target }}
           tool-chain: ${{ env.TOOL_CHAIN }}
           stuart-args: 'QEMU_HEADLESS=TRUE BLD_*_QEMU_CORE_NUM=${{ needs.vars.outputs.qemu-core-count }} STARTUP_NSH="${{ env.STARTUP_NSH_PATH }}" SHUTDOWN_AFTER_RUN=TRUE FILE_REGEX=*AdvancedLogDumper.efi'
-      
+
       - name: Run
         uses: ./.github/actions/build-platform
         with:
