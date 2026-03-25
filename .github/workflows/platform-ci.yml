@@ -266,17 +266,17 @@ jobs:
           capture_file="capture.json"
           validator_log="validator_output.txt"
           exit_code=0
-          
+
           if [ "${{ matrix.platform }}" = "SBSA" ]; then
             chmod +x "${DXE_READINESS_TOOL_PATH}/validator/linux/dxe_readiness_validator_x86_64"
             "${DXE_READINESS_TOOL_PATH}/validator/linux/dxe_readiness_validator_x86_64" -f "$capture_file" 2>&1 | tee "$validator_log" || exit_code=$?
           elif [ "${{ matrix.platform }}" = "Q35" ]; then
             "${DXE_READINESS_TOOL_PATH}/validator/windows/dxe_readiness_validator_x86_64.exe" -f "$capture_file" 2>&1 | tee "$validator_log" || exit_code=$?
           fi
-          
+
           # Save exit code for use in PR comment workflow
           echo "$exit_code" > validator_exit_code.txt
-          
+
           # Exit with the original exit code (allows workflow to continue but tracks failure)
           exit $exit_code
 
@@ -311,7 +311,7 @@ jobs:
           name: readiness-report-data-${{ matrix.platform }}
           path: pr-data/
           retention-days: 1
-          
+
   publish-release-assets:
     needs: build
     if: github.event_name == 'release'

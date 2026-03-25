@@ -14,12 +14,12 @@ on:
   schedule:
     - cron: '0 6 * * *'  # Runs daily at 06:00 UTC
   workflow_dispatch:
-  
+
 jobs:
   vars:
     name: Get Repository Constants
     uses: ./.github/workflows/constants.yml
-  
+
   prepare-os-images:
     name: Prepare OS Boot Images
 
@@ -41,10 +41,10 @@ jobs:
     with:
       image-url: ${{ matrix.img-url }}
       artifact-name: ${{ matrix.artifact-name }}
-  
+
   boot-with-os:
     name: Boot ${{ contains(matrix.os-artifact, 'windows') && 'Windows' || 'Ubuntu' }} ${{ matrix.os-boot-device }} ${{ matrix.platform }} ${{ matrix.target }}
-    needs: 
+    needs:
       - prepare-os-images
       - vars
 
@@ -53,9 +53,9 @@ jobs:
     container:
       image: ${{ needs.vars.outputs.container-image }}
       options: --security-opt seccomp=unconfined
-    
+
     timeout-minutes: 30
-    
+
     env:
       OS_BOOT_ARTIFACTS_PATH: ./os-boot-artifacts
       TOOL_CHAIN: ${{ needs.vars.outputs.linux-toolchain }}
@@ -185,7 +185,7 @@ jobs:
       # Configure git for use in the container. Specifically needed for the FFA builds
       - name: Configure Git
         uses: ./.github/actions/configure-git
-      
+
       # Install the pip dependencies needed to run stuart for the platform(s)
       - name: Install dependencies
         run: pip install -r pip-requirements.txt
@@ -198,10 +198,10 @@ jobs:
         with:
           name: ${{ matrix.os-artifact }}
           path: ${{ env.OS_BOOT_ARTIFACTS_PATH }}
-      
+
       # Run the build-platform action, which calls stuart_setup, stuart_update, and stuart_build
       - name: Prepare and Build
-        id: build-platform  
+        id: build-platform
         uses: ./.github/actions/build-platform
         with:
           command: 'build'
@@ -210,7 +210,7 @@ jobs:
           target: ${{ matrix.target }}
           tool-chain: ${{ env.TOOL_CHAIN }}
           stuart-args: 'QEMU_HEADLESS=TRUE BLD_*_QEMU_CORE_NUM=${{ needs.vars.outputs.qemu-core-count }} ${{ matrix.extra-args }} OS_BOOT_DEVICE=${{ matrix.os-boot-device}}'
-      
+
       - name: Run
         uses: ./.github/actions/build-platform
         with:
@@ -220,7 +220,7 @@ jobs:
           target: ${{ matrix.target }}
           tool-chain: ${{ env.TOOL_CHAIN }}
           stuart-args: 'QEMU_HEADLESS=TRUE BLD_*_QEMU_CORE_NUM=${{ needs.vars.outputs.qemu-core-count }} ${{ matrix.extra-args }} OS_BOOT_DEVICE=${{ matrix.os-boot-device}}'
-     
+
       - name: Publish Logs
         if: always()
         uses: actions/upload-artifact@v7

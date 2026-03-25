@@ -65,14 +65,14 @@ jobs:
           # Check if any validator reported failures via exit code
           Q35_EXIT_CODE=$(cat validator_exit_code_Q35.txt 2>/dev/null || echo "0")
           SBSA_EXIT_CODE=$(cat validator_exit_code_SBSA.txt 2>/dev/null || echo "0")
-          
+
           if [ "$Q35_EXIT_CODE" = "0" ] && [ "$SBSA_EXIT_CODE" = "0" ]; then
             echo "No failures detected (Q35 exit: $Q35_EXIT_CODE, SBSA exit: $SBSA_EXIT_CODE). Skipping PR comment."
             exit 0
           fi
-          
+
           echo "Failures detected (Q35 exit: $Q35_EXIT_CODE, SBSA exit: $SBSA_EXIT_CODE). Posting PR comment."
-          
+
           # Combine both platform reports with a hidden marker for comment identification
           COMMENT_MARKER="<!-- readiness-report-comment -->"
           echo "$COMMENT_MARKER" > combined_report.txt
@@ -81,16 +81,16 @@ jobs:
           echo "" >> combined_report.txt
           echo "## SBSA Readiness Report" >> combined_report.txt
           cat validator_output_SBSA.txt >> combined_report.txt
-          
+
           COMMENT_BODY=$(cat combined_report.txt)
-          
+
           # Check for existing comment with our marker and update it, or create new
           EXISTING_COMMENT_ID=$(gh api \
             -H "Accept: application/vnd.github+json" \
             "/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
             --jq '.[] | select(.body | contains("<!-- readiness-report-comment -->")) | .id' \
             | head -n 1)
-          
+
           if [ -n "$EXISTING_COMMENT_ID" ]; then
             echo "Updating existing comment $EXISTING_COMMENT_ID"
             gh api \
