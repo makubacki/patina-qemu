@@ -28,7 +28,7 @@ jobs:
   # generate its matrix.
   vars:
     name: Get Repository Constants
-    uses: ./.github/workflows/constants.yml
+    uses: OpenDevicePartnership/patina-devops/.github/workflows/qemu-constants.yml@main
 
   # Builds the platform(s) in this repository as defined by the matrix.
   build:

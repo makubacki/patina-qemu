@@ -18,7 +18,7 @@ on:
 jobs:
   vars:
     name: Get Repository Constants
-    uses: ./.github/workflows/constants.yml
+    uses: OpenDevicePartnership/patina-devops/.github/workflows/qemu-constants.yml@main
 
   adv-logger-shell-test:
     name: UEFI shell Adv Log
