@@ -102,6 +102,7 @@ jobs:
       HAF_TFA_PATH: Platforms/QemuArmVirtPkg/Binaries/haf_tfa_binaries_ext_dep.yaml
       PLATFORM_BUILD_PATH: Platforms/QemuArmVirtPkg/PlatformBuild.py
       TAG_NAME: ${{ needs.check.outputs.tag_name }}
+      PR_BRANCH_PREFIX: sync-haf-tfa/
       PR_BRANCH_NAME: sync-haf-tfa/${{ needs.check.outputs.tag_name }}
 
     steps:
@@ -213,11 +214,13 @@ jobs:
         if: steps.extdep-check.outputs.is_current != 'true'
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_BRANCH_PREFIX: ${{ env.PR_BRANCH_PREFIX}}
+          PR_BRANCH_PREFIX: ${{ env.PR_BRANCH_PREFIX }}
           KEEP_PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          # Only close existing PRs authored by the bot.
+          PR_AUTHOR: 'patina-automation[bot]'
         run: |
-          OPEN_PRS=$(gh pr list --state open --json number,headRefName \
-            -q ".[] | select(.headRefName | startswith(\"${PR_BRANCH_PREFIX}\")) | .number")
+          OPEN_PRS=$(gh pr list --state open --json number,headRefName,author \
+            -q ".[] | select(.headRefName | startswith(\"${PR_BRANCH_PREFIX}\")) | select(.author.login == \"${PR_AUTHOR}\") | .number")
 
           for PR in $OPEN_PRS; do
             if [[ "$PR" != "$KEEP_PR_NUMBER" ]]; then
