@@ -217,7 +217,7 @@ jobs:
           PR_BRANCH_PREFIX: ${{ env.PR_BRANCH_PREFIX }}
           KEEP_PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
           # Only close existing PRs authored by the bot.
-          PR_AUTHOR: 'patina-automation[bot]'
+          PR_AUTHOR: 'app/patina-automation'
         run: |
           OPEN_PRS=$(gh pr list --state open --json number,headRefName,author \
             -q ".[] | select(.headRefName | startswith(\"${PR_BRANCH_PREFIX}\")) | select(.author.login == \"${PR_AUTHOR}\") | .number")
