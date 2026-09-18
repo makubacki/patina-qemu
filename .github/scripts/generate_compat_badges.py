@@ -19,7 +19,7 @@ from pathlib import Path
 # Colors representing each image/distro, used for OS-version and bootloader badges. Add an entry
 # here when a new OS family (e.g. Fedora) is introduced. Unknown families fall back to DEFAULT_COLOR.
 DISTRO_COLORS = {
-    "ubuntu": "E95420",
+    "ubuntu": "77216F",
     "windows": "0078D4",
 }
 
@@ -83,6 +83,12 @@ def build_environment(out_dir: Path) -> None:
         out_dir / "badges" / "env" / "patina-qemu-commit.json",
         "patina-qemu",
         environment["patina_qemu_commit"][:7],
+        "lightgrey",
+    )
+    write_badge(
+        out_dir / "badges" / "env" / "last-run.json",
+        "last run",
+        environment["timestamp"].replace("T", " ").rstrip("Z") + " UTC",
         "lightgrey",
     )
 

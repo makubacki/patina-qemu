@@ -11,6 +11,7 @@ The matrix below reflects the most recent scheduled [Boot Tests](.github/workflo
 [![Patina](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/makubacki/patina-qemu/badges/badges/env/patina-sdk.json)](https://github.com/OpenDevicePartnership/patina)
 [![Patina DXE Core QEMU](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/makubacki/patina-qemu/badges/badges/env/patina-dxe-core-qemu.json)](https://github.com/OpenDevicePartnership/patina-dxe-core-qemu)
 [![patina-qemu commit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/makubacki/patina-qemu/badges/badges/env/patina-qemu-commit.json)](https://github.com/OpenDevicePartnership/patina-qemu/commits/main)
+[![Last Run](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/makubacki/patina-qemu/badges/badges/env/last-run.json)](.github/workflows/nightly-os-boot.yml)
 
 <!-- compat-matrix:start -->
 
