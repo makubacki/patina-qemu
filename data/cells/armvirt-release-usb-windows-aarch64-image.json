@@ -1,0 +1,12 @@
+{
+  "cell_id": "armvirt-release-usb-windows-aarch64-image",
+  "os_artifact": "windows-aarch64-image",
+  "os_boot_device": "USB",
+  "platform": "ArmVirt",
+  "result": "success",
+  "run_id": "35401039532",
+  "run_url": "https://github.com/makubacki/patina-qemu/actions/runs/35401039532",
+  "schema_version": 1,
+  "target": "RELEASE",
+  "timestamp": "2026-09-18T22:38:57Z"
+}
