@@ -387,7 +387,7 @@ jobs:
     needs:
       - boot-with-os
       - resolve-environment
-    if: ${{ always() && github.event_name == 'schedule' }}
+    if: ${{ always() }}
 
     runs-on: ubuntu-latest
 
