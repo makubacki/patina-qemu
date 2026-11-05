@@ -3,10 +3,10 @@
   "os_artifact": "ubuntu-aarch64-image",
   "os_boot_device": "USB",
   "platform": "ArmVirt",
-  "result": "success",
-  "run_id": "41841833563",
-  "run_url": "https://github.com/makubacki/patina-qemu/actions/runs/41841833563",
+  "result": "failure",
+  "run_id": "42041433508",
+  "run_url": "https://github.com/makubacki/patina-qemu/actions/runs/42041433508",
   "schema_version": 1,
   "target": "DEBUG",
-  "timestamp": "2026-11-04T14:09:34Z"
+  "timestamp": "2026-11-05T14:13:02Z"
 }
