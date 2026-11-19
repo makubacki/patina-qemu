@@ -35,6 +35,14 @@ images that will be booted so that, once booted, they automatically shut down. T
 flashed to the two virtual platforms, and BDS automatically detects the operating system and boots. In addition to
 the nightly schedule, this workflow also runs on pull requests to catch OS boot regressions before they merge.
 
+The OS images are prepared by the shared
+[`PatinaQemuPrepareOsImages.yml`](https://github.com/OpenDevicePartnership/patina-devops/blob/main/.github/workflows/PatinaQemuPrepareOsImages.yml)
+workflow in patina-devops. The same images are used by the Patina QEMU PR validation workflow, which runs on pull
+requests to the patina and patina-dxe-core-qemu repositories. That workflow patches the pull request's Patina DXE Core
+into the latest release firmware from this repository with `build_and_run_rust_binary.py`, then boots Ubuntu and the
+Windows Validation OS from an internal drive on each platform and build target. It also runs the pre-compiled EFI
+test apps published in the `TestApps` directory of each firmware variant in the release zips.
+
 ## Advanced Logger Log Gathering
 
 The advanced logger is a logger implementation for UEFI firmware that writes its log files to a special partition
