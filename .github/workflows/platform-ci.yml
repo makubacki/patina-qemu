@@ -15,9 +15,11 @@ on:
   push:
     branches:
       - main
+      - os-boot-and-test-apps-pr-validation
   pull_request:
     branches:
       - main
+      - os-boot-and-test-apps-pr-validation
 
 concurrency:
   group: "platform-ci-${{ github.ref }}"

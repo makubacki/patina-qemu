@@ -77,7 +77,7 @@ jobs:
           - img-url: ${{ needs.vars.outputs.windows-aarch64-image }}
             artifact-name: ${{ needs.vars.outputs.windows-aarch64-artifact }}
 
-    uses: OpenDevicePartnership/patina-devops/.github/workflows/PatinaQemuPrepareOsImages.yml@main
+    uses: makubacki/patina-devops/.github/workflows/PatinaQemuPrepareOsImages.yml@os-boot-and-test-apps-pr-validation
     with:
       image-url: ${{ matrix.img-url }}
       artifact-name: ${{ matrix.artifact-name }}
