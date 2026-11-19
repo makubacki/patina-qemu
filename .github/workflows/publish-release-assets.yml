@@ -63,6 +63,12 @@ jobs:
             for firmware_file in artifact_dir.rglob("*.fd"):
               shutil.copy2(firmware_file, destination / firmware_file.name)
 
+            # Pre-compiled EFI test apps, run against this firmware by Patina QEMU PR validation.
+            test_apps_destination = destination / "TestApps"
+            for test_app in artifact_dir.rglob("*TestApp*.efi"):
+              test_apps_destination.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(test_app, test_apps_destination / test_app.name)
+
       - name: Create the zip files
         shell: python
         run: |
