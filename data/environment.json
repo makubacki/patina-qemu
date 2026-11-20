@@ -1,9 +1,9 @@
 {
-  "patina_dxe_core_qemu_version": "3.1.5",
-  "patina_qemu_commit": "2bc7b8b86487dc05688681642c8b72f3583176ab",
-  "patina_sdk_version": "22.2.4",
-  "run_id": "44553470432",
-  "run_url": "https://github.com/makubacki/patina-qemu/actions/runs/44553470432",
+  "patina_dxe_core_qemu_version": "5.0.1",
+  "patina_qemu_commit": "6f4f3570a9fdf6edb77c4f68406fe52fc44ff4fc",
+  "patina_sdk_version": "24.4.0",
+  "run_id": "44758429229",
+  "run_url": "https://github.com/makubacki/patina-qemu/actions/runs/44758429229",
   "schema_version": 1,
-  "timestamp": "2026-11-19T15:41:46Z"
+  "timestamp": "2026-11-20T15:28:21Z"
 }
